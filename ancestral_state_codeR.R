@@ -23,7 +23,7 @@
 #
 # Intellectual property belongs to IRD 
 #
-# Written by Philippe Cubry
+# Written by Philippe Cubry, Yves Vigouroux, Olivier François
 #
 ###################################################################################################################################
 
