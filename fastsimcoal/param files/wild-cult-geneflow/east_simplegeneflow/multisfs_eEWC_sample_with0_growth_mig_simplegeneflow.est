@@ -1,0 +1,28 @@
+//Priors and rules file
+//*********************
+
+[PARAMETERS]
+//#isInt? #Name #dist. #min #max
+//all N are in number of haploid individuals
+1 NCult$ logunif 1000 100000 output
+1 Nw$ logunif 1000 1000000 output
+1 Ne$ logunif 1000 1000000 output
+1 Nc$ logunif 1000 1000000 output
+1 NA1$ logunif 1000 1000000 output
+1 NA2$ logunif 1000 1000000 output
+1 T1$ unif 1000 100000 output
+1 T2$ unif 1000 100000 output
+1 T0$ unif 1000 100000 output
+0 M02$ logunif 1e-7 0.5 output
+0 M20$ logunif 1e-7 0.5 output
+
+[RULES]
+T2$ >= T1$
+T1$ >= T0$
+
+[COMPLEX PARAMETERS]
+0 Res1a$ = NA1$/Nc$ hide
+0 Res2a$ = NA2$/Nw$ hide
+0 Ratio$ = Ne$/NCult$ output
+0 TmpGrowth$ = log(Ratio$) hide
+0 GRate$ = TmpGrowth$/T0$ output
