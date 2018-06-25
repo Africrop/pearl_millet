@@ -1,0 +1,366 @@
+---
+title: "Pearl millet - Timing expansion for non correlated frequencies model"
+author: "Philippe Cubry"
+date: "6 octobre 2017"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#### Functions ####
+library(ggplot2)
+library(raster)
+library(rgdal)
+library(cowplot)
+library(MASS)
+library(coda)
+
+nat.earth <- stack('/media/philippe/OSDisk/Users/cubry/Documents/GIS/naturalearth/HYP_50M_SR_W.tif')
+setwd("/media/philippe/OSDisk/Users/cubry/Documents/")
+lakes <- readOGR("/media/philippe/OSDisk/Users/cubry/Documents/GIS/naturalearth",layer = "ne_10m_lakes")
+rivers <- readOGR("/media/philippe/OSDisk/Users/cubry/Documents/GIS/naturalearth",layer = "ne_50m_rivers_lake_centerlines")
+playas <- readOGR("/media/philippe/OSDisk/Users/cubry/Documents/GIS/naturalearth",layer = "ne_50m_playas")
+ocean <- readOGR("/media/philippe/OSDisk/Users/cubry/Documents/GIS/naturalearth",layer = "ne_10m_ocean")
+shapefile <- readOGR("/media/philippe/OSDisk/Users/cubry/Documents/GIS/naturalearth",layer = "ne_50m_admin_0_countries")
+data <- fortify(shapefile)
+data.lakes <- fortify(lakes)
+data.playas <- fortify(playas)
+data.ocean <- fortify(ocean)
+data.rivers <- fortify(rivers)
+# Define extent and load raster for the map
+extent <- c(-25,57,-5,40)
+nat.crop <- crop(nat.earth, y=extent(extent))
+rast.table <- data.frame(xyFromCell(nat.crop, 1:ncell(nat.crop)),
+                         getValues(nat.crop/255))
+rast.table$rgb <- with(rast.table, rgb(HYP_50M_SR_W.1,
+                                       HYP_50M_SR_W.2,
+                                       HYP_50M_SR_W.3,
+                                      1))
+
+rm(nat.earth,nat.crop)
+
+```
+Updated with new simulations datasets
+Reupdated with new datation points (Kenya, Tanzania, Zanzibar, october 2017)
+
+## Rationale
+
+Posterior to the Splatche inference of the onset of the cultivated pearl millet expansion, we performed additional 5000 simulations were we recovered time of arrival in locations were we had real time indication for the presence of cultivated millet. The idea beyond this experiment was to try infer the timing for the onset of expansion.
+
+### Calibration dates available UPDATED 16052018
+Following the indications found in bibliography by Christian Dupuy, we identified the following candidate times: 
+
+Country/Region|Approximative calibrated date (BC)  
+--------------|-----------------------  
+Mali|-2579 ? -2409  
+Mauritania|-2134 ? -1562  
+Congo|-392 ? -115 
+South Africa|300  
+India|-1800  
+Nigeria|-1616 ? -1506 
+Ghana|-2401 ? -1300 
+Cameroon|-756 ? -197  
+Burkina|-1191 ? -851
+Kenya|775-980
+Zanzibar|605-760
+Tanzania|640-770
+
+Corresponding mean and sd
+Pop|mean|sd
+Mali|4494|42.5
+Mauritania|3848|143
+Congo|2253.5|69.25
+Nigeria|3561|27.5
+Ghana|3850.5|275.25
+Cameroon|2476.5|139.75
+Burkina|3021|85
+Kenya|1122.5|51.25
+Zanzibar|1317.5|38.75
+Tanzania|1295|32.5
+
+### Simulations
+We used the coordinates found in Christian DUPUY report to extract the simulated time of arrival on the considered cells. As we only simulate migration into Africa, we retained the easternmost point of Africa corner as a proxy for the date of introduction into India.  
+Simulations were performed using SPLATCHE2 and the previously developped simulation framework, using the posteriors calculated by ABC for the estimation of the origin of the expansion. We performed 5000 simulations by randomly sampling the parameters from the posteriors distributions.
+We then gather the simulated time of arrivals in a single file.
+We used calibrated dates relative to 2000 AD for the calibrations.
+```{r map points,echo=FALSE}
+map_archeo <-   ggplot()+  
+    geom_polygon(aes(x = long, y = lat, group = group),
+                 fill="lightblue", data = data.ocean, size = .3) +
+    geom_polygon(aes(x = long, y = lat, group = group), data = data,
+                 colour ='antiquewhite4', fill = "white", size = .3) +
+    geom_polygon(aes(x = long, y = lat, group = group), data = data,
+                 colour ='antiquewhite4', fill = NA, size = .3) +
+    geom_polygon(aes(x = long, y = lat, group = group), data = data.lakes,
+                 colour ='lightblue',fill="lightblue", size = .3) +
+    geom_path(aes(x = long, y = lat, group = group), data = data.rivers,
+              colour ='lightblue') +
+    geom_point(
+      aes(x = 0.23,y = 16.8))+
+      geom_point(
+      aes(x = -9.13,y = 18.28))+
+      geom_point(
+      aes(x = 14.18,y = 1.13))+
+      geom_point(
+      aes(x = 26.5,y = -30))+
+#      geom_point(
+#      aes(x = 50,y = 10))+
+      geom_point(
+      aes(x = 7.7,y = 9.62))+
+      geom_point(
+      aes(x = -0.78,y = 10.53))+
+      geom_point(
+      aes(x = 9.92,y = 2.9))+
+      geom_point(
+      aes(x = -0.17,y = 14.97))+
+      geom_point(
+      aes(x = 39.68,y = -3.83))+
+      geom_point(
+      aes(x = 39.38,y = -6.31))+
+      geom_point(
+      aes(x = 39.78,y = -4.95))+
+
+    geom_text(
+      aes(x = 0.23,y = 16.8),label="4,494 +- 85 bp",nudge_x=0.8,nudge_y=0,hjust="left")+
+      geom_text(
+      aes(x = -9.13,y = 18.28),label="3,848 +- 286 bp",nudge_x=0.8,nudge_y=1,hjust="left")+
+      geom_text(
+      aes(x = 14.18,y = 1.13),label="2,253 +- 139 bp",nudge_x=0.8,nudge_y=-1,hjust="left")+
+      geom_text(
+      aes(x = 26.5,y = -30),label="ca 1,700 bp",nudge_x=0.8,nudge_y=1,hjust="left")+
+#      geom_text(
+#      aes(x = 50,y = 10),label="ca 3,800 bp",nudge_x=0,nudge_y=2,hjust="center")+
+      geom_text(
+      aes(x = 7.7,y = 9.62),label="3,561 +- 55 bp",nudge_x=0.8,nudge_y=-1,hjust="left")+
+      geom_text(
+      aes(x = -0.78,y = 10.53),label="3,850 +- 551 bp",nudge_x=0.8,nudge_y=1,hjust="left")+
+      geom_text(
+      aes(x = 9.92,y = 2.9),label="2,476 +- 280 bp",nudge_x=0.8,nudge_y=1,hjust="left")+
+      geom_text(
+      aes(x = -0.17,y = 14.97),label="3,021 +- 170 bp",nudge_x=0.8,nudge_y=-1,hjust="left")+
+      geom_text(
+      aes(x = 39.68,y = -3.83),label="1,122 +- 102 bp",nudge_x=0.8,nudge_y=1.5,hjust="left")+
+      geom_text(
+      aes(x = 39.38,y = -6.31),label="1,317 +- 76 bp",nudge_x=0.8,nudge_y=-1.5,hjust="left")+
+      geom_text(
+      aes(x = 39.78,y = -4.95),label="1,295 +- 65 bp",nudge_x=0.8,nudge_y=0,hjust="left")+
+
+  theme_bw() +
+    theme(axis.line = element_blank(),
+          axis.title = element_blank(),
+          legend.key = element_blank(),
+          panel.border = element_rect(colour = "black",
+                                      size = .5,
+                                      linetype = "solid"
+          )
+    ) + coord_quickmap(xlim = c(-20,55),ylim =c(-37,35))+
+  ggtitle("Map of archeological remains",subtitle = "All dates given are relative to 2,000 AD")
+map_archeo
+
+ggsave(filename = "map_archeo.pdf",plot = map_archeo,width = 9,height = 6,units = "in")
+```
+
+```{r map points retained,echo=FALSE}
+map_archeo_retained <-  ggplot()+  
+    geom_polygon(aes(x = long, y = lat, group = group),
+                 fill="lightblue", data = data.ocean, size = .3) +
+    geom_polygon(aes(x = long, y = lat, group = group), data = data,
+                 colour ='antiquewhite4', fill = "white", size = .3) +
+    geom_polygon(aes(x = long, y = lat, group = group), data = data,
+                 colour ='antiquewhite4', fill = NA, size = .3) +
+    geom_polygon(aes(x = long, y = lat, group = group), data = data.lakes,
+                 colour ='lightblue',fill="lightblue", size = .3) +
+    geom_path(aes(x = long, y = lat, group = group), data = data.rivers,
+              colour ='lightblue') +
+    geom_point(
+      aes(x = 0.23,y = 16.8))+
+      geom_point(
+      aes(x = 14.18,y = 1.13))+
+      geom_point(
+      aes(x = 7.7,y = 9.62))+
+      geom_point(
+      aes(x = -0.78,y = 10.53))+
+      geom_point(
+      aes(x = 9.92,y = 2.9))+
+      geom_point(
+      aes(x = 39.38,y = -6.31))+
+
+
+    geom_text(
+      aes(x = 0.23,y = 16.8),label="2579-2409 BC",nudge_x=0.8,nudge_y=0,hjust="left")+
+      geom_text(
+      aes(x = 14.18,y = 1.13),label="392-115 BC",nudge_x=0.8,nudge_y=-1,hjust="left")+
+      geom_text(
+      aes(x = 7.7,y = 9.62),label="1616-1506 BC",nudge_x=0.8,nudge_y=-1,hjust="left")+
+      geom_text(
+      aes(x = -0.78,y = 10.53),label="2401-1300 BC",nudge_x=0.8,nudge_y=1,hjust="left")+
+      geom_text(
+      aes(x = 9.92,y = 2.9),label="756-197 BC",nudge_x=0.8,nudge_y=1,hjust="left")+
+      geom_text(
+      aes(x = 39.38,y = -6.31),label="605-760 AD", nudge_x=0.8, nudge_y=-1.5, hjust="left")+
+
+  theme_bw() +
+    theme(axis.line = element_blank(),
+          axis.title = element_blank(),
+          legend.key = element_blank(),
+          panel.border = element_rect(colour = "black",
+                                      size = .5,
+                                      linetype = "solid"
+          )
+    ) + coord_quickmap(xlim = c(-20,55),ylim =c(-37,35))+
+  ggtitle("Map of archeological remains retained for calibration")
+map_archeo_retained
+
+ggsave(filename = "map_archeo_retained_20180516.pdf",plot = map_archeo_retained,width = 9,height = 6,units = "in")
+```
+```{r gather data, include=FALSE}
+lst <- list.files("~/Mil_Splatche/FINAL/timing_new/",pattern = "*noncorr")[grep(list.files("~/Mil_Splatche/FINAL/timing_new/",pattern = "*noncorr"),pattern = "*.tar.gz")]
+
+#for(l in lst){
+#  untar(tarfile = l)}
+
+results <- NULL
+lst.dir <- list.dirs("./")
+for(d in lst.dir){
+r.lst <- list.files(path = d)[grep(pattern = "*output.txt", x=list.files(path = d))]
+for(i in r.lst){
+  tmp <- scan(paste(d,"/",i,sep=""),
+     skip=1,what = "character",sep = ":")
+tmp.results <- tmp[seq(2,22,2)]
+results <- cbind(results,tmp.results)
+rownames(results) <- tmp[seq(1,21,2)]
+}
+  }
+#Filtering for non-complete simulations
+tst <- as.numeric(apply(results,2,min))==-1
+results <- results[,which(tst==FALSE)]
+#unlink(list.dirs(path = ".", full.names = TRUE,recursive = FALSE), recursive = TRUE)
+```
+
+```{r defining calibration dates, include=FALSE}
+real <- rownames(results)
+real <- function(x){c(
+  rnorm(1,4494,42.5),
+  rnorm(1,3848,143),
+  rnorm(1,2253.5,69.25),
+  1700,
+  3800,
+  rnorm(1,3561,27.5),
+  rnorm(1,3850.5,275.25),
+  rnorm(1,2476.5,139.75),
+  rnorm(1,3021,85),
+  rnorm(1,1122.5,51.25),
+  rnorm(1,1317.5,38.75))}
+```
+
+
+### Linear regression
+We estimated the interception of the real time axis by a linear regression between simulated and real dates. This allowed us to infer a distribution for the timing of the begining of the expansion.  
+We performed several attempts for the linear regression, including or not some of the calibration dates.  
+After the linear regressions were made for each of the simulated datasets, we estimated and plotted the density of the estimated time for the onset of the expansion. We also extracted the mode of the distribution and reported it.
+
+#### Example of a regression
+Below We give an example of a linear regression on one of the simulations.
+
+```{r lm example, echo=FALSE}
+tmp <- as.numeric(real())
+lm.example <- (lm(tmp[-5]~as.numeric(results[-5,1])))
+print(lm.example)
+ggplot() +
+  geom_point(aes(x=as.numeric(results[-5,1]),y=tmp[-5] )) +
+  xlab("Simulated dates") +
+  ylab("Real dates") +
+  geom_abline(intercept=lm.example$coefficients[1],slope = lm.example$coefficients[2]) +
+  xlim(0,800)+
+  theme(axis.line=element_line(FALSE),panel.grid.major=element_line(size=0.1, color = "grey75"))
+```
+Note that in this case, we used all the available dates to perform the regression.
+
+#### Using all the available dates
+```{r,include=FALSE}
+timing.all <- NULL
+for(i in 1:ncol(results)){
+  tmp <- real()
+  timing.all <- cbind(timing.all,(lm(tmp[-5]~as.numeric(results[-5,i])))$coefficients[1])
+}
+```
+```{r density estimation and plotting all dates, echo=FALSE}
+density_timing <- ggplot() +
+  geom_density(aes(as.numeric(timing.all)),
+                        color="orange",fill="orange",alpha=0.25) +
+  geom_vline(xintercept =density(timing.all)$x[which(density(timing.all)$y ==max(density(timing.all)$y))], color="red" ) +
+  xlab("Estimated date for the onset of expansion")
+
+timing.all.mode <- density(timing.all)$x[which(density(timing.all)$y ==max(density(timing.all)$y))]
+density_timing
+#ggsave(filename = "density_timing.pdf",density_timing)
+```
+This time we obtained a mode of `r timing.all.mode`.  
+
+
+#### Using only some of the available dates
+We now perform the same analysis using only some of the available dates. These are the most extreme ones, i.e. the ones for Mali, India and South Africa.
+
+#### Example of a regression
+Below We give an example of a linear regression on one of the simulations.
+
+```{r lm example removing odd points, echo=FALSE}
+tmp <- real()
+lm.example <- (lm(tmp[-c(4,5,9)]~as.numeric(results[-c(4,5,9),2])))
+print(lm.example)
+ggplot() +
+  geom_point(aes(x=as.numeric(results[-c(4,5,9),2]),y=as.numeric(tmp[-c(4,5,9)]) )) +
+  xlab("Simulated dates") +
+  ylab("Real dates") +
+  geom_abline(intercept=lm.example$coefficients[1],slope = lm.example$coefficients[2]) +
+  xlim(0,500)+
+  theme(axis.line=element_line(FALSE),panel.grid.major=element_line(size=0.1, color = "grey75"))
+```
+
+```{r,include=FALSE}
+timing <- NULL
+for(i in 1:ncol(results)){
+  tmp <- real()
+  timing <- cbind(timing,(lm(tmp[-c(4,5,9)]~as.numeric(results[-c(4,5,9),i])))$coefficients[1])
+}
+timing <- timing[,timing>1]
+```
+```{r density estimation and plotting, echo=FALSE}
+density_timing_retained <- ggplot() +
+  geom_density(aes(as.numeric(timing)),
+                        color="orange",fill="orange",alpha=0.25) +
+  geom_vline(xintercept =density(timing)$x[which(density(timing)$y ==max(density(timing)$y))], color="red" ) +
+  xlab("Estimated date for the onset of expansion")
+
+timing.mode <- density(timing)$x[which(density(timing)$y ==max(density(timing)$y))]
+#ggsave(filename = "density_timing_retained.pdf", density_timing_retained)
+density_timing_retained
+```
+The obtained mode was `r timing.mode` with a 95% confidence interval of `r quantile(timing,probs=c(0.025,0.975))`.
+
+We then performed the same analysis excluding Mauritania.
+```{r,include=FALSE}
+timing.witht.mauritania <- NULL
+for(i in 1:ncol(results)){
+  tmp <- real()
+  timing.witht.mauritania <- cbind(timing.witht.mauritania,(lm(tmp[-c(2,4,5,9,10)]~as.numeric(results[-c(2,4,5,9,10),i])))$coefficients[1])
+}
+timing.witht.mauritania <- timing.witht.mauritania[,timing.witht.mauritania>1]
+```
+```{r density estimation and plotting without Mauritania, echo=FALSE}
+density_timing_retained.witht.mauritania <- ggplot() +
+  geom_density(aes(as.numeric(timing.witht.mauritania)),
+                        color="orange",fill="orange",alpha=0.25) +
+  geom_vline(xintercept =density(timing.witht.mauritania)$x[which(density(timing.witht.mauritania)$y ==max(density(timing.witht.mauritania)$y))], color="red" ) +
+  xlab("Estimated date for the onset of expansion") + xlim(0,NA)
+
+timing.witht.mauritania.mode <- density(timing.witht.mauritania)$x[which(density(timing.witht.mauritania)$y ==max(density(timing.witht.mauritania)$y))]
+#ggsave(filename = "density_timing_retained.witht.mauritania_20180613.pdf", density_timing_retained.witht.mauritania,width = 7,height = 4.84)
+density_timing_retained.witht.mauritania
+```
+The obtained mode was in this case `r timing.witht.mauritania.mode` with a 95% confidence interval of `r quantile(timing.witht.mauritania,probs=c(0.025,0.975))`.
+
+###
+Note that in all cases this timing might be underestimated.
